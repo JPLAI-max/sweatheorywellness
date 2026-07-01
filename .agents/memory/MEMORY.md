@@ -1,0 +1,4 @@
+- [Helmet CSP configuration](helmet-csp.md) — specific domains needed for R2, Printify, Mux; wildcard subdomain trick for R2 account ID.
+- [CSAM scan-status filter decisions](csam-phase1.md) — per-table scan_status filter pattern and why; enrichPosts bypassScanFilter for mutation responses.
+- [Mux playback policy](mux-playback-policy.md) — must use public policy for video uploads; signed policy breaks MuxPlayer with no JWT.
+- [Non-adult pivot](non-adult-pivot.md) — what's removed vs. left dormant (DB cols, OpenAPI enums, admin); grep whole src tree for adult UX, it hides in unexpected files.

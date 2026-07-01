@@ -1,0 +1,4234 @@
+openapi: 3.1.0
+info:
+  title: Api
+  version: 0.1.0
+  description: G Creator Platform API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: categories
+    description: Content categories
+  - name: auth
+    description: Authentication
+  - name: users
+    description: User profiles and social graph
+  - name: posts
+    description: Content posts
+  - name: comments
+    description: Post comments
+  - name: streams
+    description: Livestreams
+  - name: messages
+    description: Direct messaging
+  - name: wallet
+    description: Wallet and transactions
+  - name: hashtags
+    description: Hashtags and discovery
+  - name: notifications
+    description: Notifications
+  - name: bookmarks
+    description: Saved posts
+  - name: meetups
+    description: Meetups and events
+  - name: marketplace
+    description: Marketplace listings and purchases
+  - name: auctions
+    description: Auction marketplace
+  - name: merch
+  - name: mux
+    description: Mux video streaming
+  - name: upload
+    description: Server-proxied multipart file uploads for media and private documents
+
+paths:
+  # CATEGORIES
+  /categories:
+    get:
+      operationId: listCategories
+      tags: [categories]
+      summary: List all content categories
+      responses:
+        "200":
+          description: List of categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CategoryItem"
+
+  /admin/categories:
+    post:
+      operationId: createCategory
+      tags: [categories]
+      summary: Create a new category (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCategoryBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CategoryItem"
+        "400":
+          description: Validation error
+        "409":
+          description: Already exists
+
+  /admin/categories/{id}:
+    delete:
+      operationId: deleteCategory
+      tags: [categories]
+      summary: Delete a category (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok]
+                properties:
+                  ok:
+                    type: boolean
+        "404":
+          description: Not found
+
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  # AUTH
+  /auth/register:
+    post:
+      operationId: register
+      tags: [auth]
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Validation error
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid credentials
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Logout
+      responses:
+        "200":
+          description: OK
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current user
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Unauthorized
+
+  /auth/forgot-password:
+    post:
+      operationId: forgotPassword
+      tags: [auth]
+      summary: Request a password reset link
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ForgotPasswordBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ForgotPasswordResponse"
+
+  /auth/reset-password:
+    post:
+      operationId: resetPassword
+      tags: [auth]
+      summary: Reset password using a token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResetPasswordBody"
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Invalid or expired token
+
+  # USERS
+  /users:
+    get:
+      operationId: searchUsers
+      tags: [users]
+      summary: Search users
+      parameters:
+        - name: q
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UserSummary"
+
+  /users/{userId}:
+    get:
+      operationId: getUser
+      tags: [users]
+      summary: Get user profile
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateUser
+      tags: [users]
+      summary: Update user profile
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserUpdate"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /users/{userId}/follow:
+    post:
+      operationId: followUser
+      tags: [users]
+      summary: Follow a user
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+    delete:
+      operationId: unfollowUser
+      tags: [users]
+      summary: Unfollow a user
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+
+  /users/{userId}/followers:
+    get:
+      operationId: getFollowers
+      tags: [users]
+      summary: Get followers
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UserSummary"
+
+  /users/{userId}/following:
+    get:
+      operationId: getFollowing
+      tags: [users]
+      summary: Get following
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UserSummary"
+
+  /users/{userId}/posts:
+    get:
+      operationId: getUserPosts
+      tags: [users]
+      summary: Get user's posts
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Post"
+
+  /users/suggestions:
+    get:
+      operationId: getSuggestedUsers
+      tags: [users]
+      summary: Get suggested users to follow
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 5
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UserSummary"
+
+  /users/{userId}/upgrade:
+    post:
+      operationId: upgradeAccount
+      tags: [users]
+      summary: Upgrade or change account tier
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpgradeAccountBody"
+      responses:
+        "200":
+          description: Tier updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpgradeAccountResult"
+        "400":
+          description: Invalid tier
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+
+  /users/{userId}/verify-id:
+    post:
+      operationId: submitIdVerification
+      tags: [users]
+      summary: Submit government ID for age verification
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerifyIdInput"
+      responses:
+        "200":
+          description: ID submitted for review
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VerifyIdResult"
+        "400":
+          description: Missing image data
+        "403":
+          description: Forbidden
+
+  /users/{userId}/stats:
+    get:
+      operationId: getUserStats
+      tags: [users]
+      summary: Get user stats
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserStats"
+
+  # POSTS
+  /posts:
+    get:
+      operationId: listPosts
+      tags: [posts]
+      summary: List posts (feed)
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [all, video, photo, text]
+        - name: hashtag
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Post"
+    post:
+      operationId: createPost
+      tags: [posts]
+      summary: Create a post
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PostInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+
+  /posts/feed:
+    get:
+      operationId: getFeed
+      tags: [posts]
+      summary: Get personalized feed
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: tab
+          in: query
+          schema:
+            type: string
+            enum: [new, hot, gooned, following]
+            default: new
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FeedResponse"
+
+  /posts/trending:
+    get:
+      operationId: getTrendingPosts
+      tags: [posts]
+      summary: Get trending posts
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [new, hot, gooned]
+            default: new
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Post"
+
+  /posts/{postId}:
+    get:
+      operationId: getPost
+      tags: [posts]
+      summary: Get a post
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+        "404":
+          description: Not found
+    patch:
+      operationId: updatePost
+      tags: [posts]
+      summary: Update a post
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PostUpdate"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+    delete:
+      operationId: deletePost
+      tags: [posts]
+      summary: Delete a post
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+
+  /posts/{postId}/like:
+    post:
+      operationId: likePost
+      tags: [posts]
+      summary: Like a post
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+    delete:
+      operationId: unlikePost
+      tags: [posts]
+      summary: Unlike a post
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+
+  /posts/{postId}/bookmark:
+    post:
+      operationId: bookmarkPost
+      tags: [bookmarks]
+      summary: Bookmark a post
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+    delete:
+      operationId: unbookmarkPost
+      tags: [bookmarks]
+      summary: Remove bookmark
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+
+  /posts/{postId}/report:
+    post:
+      operationId: reportPost
+      tags: [posts]
+      summary: Report a post for policy violation
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReportInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReportResult"
+
+  /posts/{postId}/reactions:
+    get:
+      operationId: getPostReactions
+      tags: [posts]
+      summary: Get emoji reaction counts and current user's reactions for a post
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PostReactionsResponse"
+    post:
+      operationId: addReaction
+      tags: [posts]
+      summary: Add an emoji reaction to a post
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddReactionBody"
+      responses:
+        "200":
+          description: OK
+
+  /posts/{postId}/reactions/{emoji}:
+    delete:
+      operationId: removeReaction
+      tags: [posts]
+      summary: Remove an emoji reaction from a post
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: emoji
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+
+  /bookmarks:
+    get:
+      operationId: getBookmarks
+      tags: [bookmarks]
+      summary: Get bookmarked posts
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Post"
+
+  # PAID CONTENT
+  /posts/{postId}/unlock:
+    post:
+      operationId: unlockPost
+      tags: [posts]
+      summary: Unlock a paid post (deduct wallet balance)
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Unlocked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PostUnlockResult"
+        "400":
+          description: Insufficient balance or already unlocked
+
+  /posts/{postId}/unlock/status:
+    get:
+      operationId: getPostUnlockStatus
+      tags: [posts]
+      summary: Check if the current user has unlocked a post
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PostUnlockStatus"
+
+  /library:
+    get:
+      operationId: getLibrary
+      tags: [library]
+      summary: Paginated list of posts the current user has unlocked
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LibraryPost"
+
+  /custom-requests:
+    post:
+      operationId: createCustomRequest
+      tags: [customRequests]
+      summary: Create a custom content request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCustomRequestBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustomRequest"
+    get:
+      operationId: listCustomRequests
+      tags: [customRequests]
+      summary: List custom requests (sent or received)
+      parameters:
+        - name: role
+          in: query
+          schema:
+            type: string
+            enum: [sent, received]
+            default: sent
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CustomRequest"
+
+  /custom-requests/{id}:
+    get:
+      operationId: getCustomRequest
+      tags: [customRequests]
+      summary: Get a single custom request with messages
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustomRequestDetail"
+    patch:
+      operationId: updateCustomRequest
+      tags: [customRequests]
+      summary: Update status, counteroffer, deliver, or send a message
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCustomRequestBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustomRequest"
+
+  # COMMENTS
+  /posts/{postId}/comments:
+    get:
+      operationId: getComments
+      tags: [comments]
+      summary: Get comments on a post
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Comment"
+    post:
+      operationId: createComment
+      tags: [comments]
+      summary: Create a comment
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommentInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Comment"
+
+  /comments/{commentId}:
+    delete:
+      operationId: deleteComment
+      tags: [comments]
+      summary: Delete a comment
+      parameters:
+        - name: commentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+
+  # STREAMS
+  /streams:
+    get:
+      operationId: listStreams
+      tags: [streams]
+      summary: List active streams
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Stream"
+    post:
+      operationId: createStream
+      tags: [streams]
+      summary: Start a livestream
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StreamInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Stream"
+
+  /streams/{streamId}:
+    get:
+      operationId: getStream
+      tags: [streams]
+      summary: Get stream info
+      parameters:
+        - name: streamId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Stream"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateStream
+      tags: [streams]
+      summary: Update stream
+      parameters:
+        - name: streamId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StreamUpdate"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Stream"
+    delete:
+      operationId: endStream
+      tags: [streams]
+      summary: End a stream
+      parameters:
+        - name: streamId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+
+  /streams/{streamId}/stream-credentials:
+    get:
+      operationId: getStreamCredentials
+      tags: [streams]
+      summary: Get RTMP stream credentials (host only)
+      parameters:
+        - name: streamId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StreamCredentials"
+        "403":
+          description: Forbidden
+
+  /streams/{streamId}/playback-token:
+    get:
+      operationId: getStreamPlaybackToken
+      tags: [streams]
+      summary: Mint a short-lived signed Mux playback token for a live stream or clean recording
+      parameters:
+        - name: streamId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlaybackToken"
+        "402":
+          description: Purchase required
+        "403":
+          description: Access denied or recording pending review
+        "404":
+          description: Stream or playback ID not found
+
+  /streams/{streamId}/tip:
+    post:
+      operationId: tipStream
+      tags: [streams]
+      summary: Tip a streamer
+      parameters:
+        - name: streamId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TipInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Transaction"
+
+  # MESSAGES
+  /conversations:
+    get:
+      operationId: listConversations
+      tags: [messages]
+      summary: List conversations
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Conversation"
+    post:
+      operationId: createConversation
+      tags: [messages]
+      summary: Create or get a direct conversation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConversationInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Conversation"
+
+  /conversations/unread-count:
+    get:
+      operationId: getUnreadMessageCount
+      tags: [messages]
+      summary: Get total unread message count for the current user
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [count]
+                properties:
+                  count:
+                    type: integer
+
+  /conversations/{conversationId}/messages:
+    get:
+      operationId: getMessages
+      tags: [messages]
+      summary: Get messages in a conversation
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: before
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Message"
+    post:
+      operationId: sendMessage
+      tags: [messages]
+      summary: Send a message
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MessageInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+
+  /conversations/{conversationId}/read:
+    patch:
+      operationId: markConversationRead
+      tags: [messages]
+      summary: Mark all messages in a conversation as read
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+
+  # WALLET
+  /wallet:
+    get:
+      operationId: getWallet
+      tags: [wallet]
+      summary: Get wallet balance
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Wallet"
+
+  /wallet/transactions:
+    get:
+      operationId: getTransactions
+      tags: [wallet]
+      summary: Get transaction history
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Transaction"
+
+  /wallet/deposit:
+    post:
+      operationId: depositFunds
+      tags: [wallet]
+      summary: Deposit funds
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WalletFundInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Wallet"
+
+  /wallet/withdraw:
+    post:
+      operationId: withdrawFunds
+      tags: [wallet]
+      summary: Withdraw funds
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WalletFundInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Wallet"
+
+  /tips:
+    post:
+      operationId: sendTip
+      tags: [wallet]
+      summary: Send a tip to a creator
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TipInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Transaction"
+
+  # LINK PREVIEW
+  /link-preview:
+    get:
+      operationId: getLinkPreview
+      tags: [posts]
+      summary: Fetch OG metadata for a URL
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: url
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Link preview metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LinkPreview"
+        "400":
+          description: Invalid URL
+        "408":
+          description: Request timed out
+        "422":
+          description: Could not fetch URL
+
+  # HASHTAGS / SEARCH
+  /hashtags/trending:
+    get:
+      operationId: getTrendingHashtags
+      tags: [hashtags]
+      summary: Get trending hashtags
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Hashtag"
+
+  /search:
+    get:
+      operationId: search
+      tags: [hashtags]
+      summary: Search posts and users
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [all, posts, users]
+            default: all
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SearchResults"
+
+  # NOTIFICATIONS
+  /notifications:
+    get:
+      operationId: listNotifications
+      tags: [notifications]
+      summary: List notifications
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Notification"
+
+  /notifications/read:
+    post:
+      operationId: markNotificationsRead
+      tags: [notifications]
+      summary: Mark notifications as read
+      responses:
+        "200":
+          description: OK
+
+  /notifications/unread-count:
+    get:
+      operationId: getUnreadNotificationCount
+      tags: [notifications]
+      summary: Get unread notification count
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnreadCount"
+
+  # MEETUPS
+  /meetups:
+    get:
+      operationId: listMeetups
+      tags: [meetups]
+      summary: List meetups
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [virtual, in-person]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MeetupList"
+    post:
+      operationId: createMeetup
+      tags: [meetups]
+      summary: Create a meetup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMeetupInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MeetupDetail"
+
+  /meetups/{meetupId}:
+    get:
+      operationId: getMeetup
+      tags: [meetups]
+      summary: Get a meetup
+      parameters:
+        - name: meetupId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MeetupDetail"
+    patch:
+      operationId: updateMeetup
+      tags: [meetups]
+      summary: Update or cancel a meetup
+      parameters:
+        - name: meetupId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMeetupInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MeetupDetail"
+
+  /meetups/{meetupId}/rsvp:
+    post:
+      operationId: rsvpMeetup
+      tags: [meetups]
+      summary: RSVP to a meetup
+      parameters:
+        - name: meetupId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RsvpResult"
+    delete:
+      operationId: cancelRsvp
+      tags: [meetups]
+      summary: Cancel RSVP
+      parameters:
+        - name: meetupId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RsvpResult"
+
+  # MARKETPLACE
+  /listings:
+    get:
+      operationId: listListings
+      tags: [marketplace]
+      summary: List marketplace listings
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: type
+          in: query
+          schema:
+            type: string
+        - name: minPrice
+          in: query
+          schema:
+            type: number
+        - name: maxPrice
+          in: query
+          schema:
+            type: number
+        - name: sellerId
+          in: query
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListingList"
+    post:
+      operationId: createListing
+      tags: [marketplace]
+      summary: Create a listing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateListingInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListingDetail"
+
+  /listings/{listingId}:
+    get:
+      operationId: getListing
+      tags: [marketplace]
+      summary: Get a listing
+      parameters:
+        - name: listingId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListingDetail"
+    patch:
+      operationId: updateListing
+      tags: [marketplace]
+      summary: Update or archive a listing
+      parameters:
+        - name: listingId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateListingInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListingDetail"
+
+  /listings/{listingId}/purchase:
+    post:
+      operationId: purchaseListing
+      tags: [marketplace]
+      summary: Purchase a listing
+      parameters:
+        - name: listingId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+
+  /orders:
+    get:
+      operationId: listOrders
+      tags: [marketplace]
+      summary: Get my purchase history
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Order"
+
+  # AUCTIONS
+  /auctions:
+    get:
+      operationId: listAuctions
+      tags: [auctions]
+      summary: List / search auctions
+      parameters:
+        - in: query
+          name: category
+          schema: { type: string }
+        - in: query
+          name: itemType
+          schema: { type: string }
+        - in: query
+          name: status
+          schema: { type: string }
+        - in: query
+          name: q
+          schema: { type: string }
+        - in: query
+          name: sort
+          schema: { type: string, enum: [ending_soon, highest_bid, newest, buy_now] }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 24 }
+        - in: query
+          name: offset
+          schema: { type: integer, default: 0 }
+        - in: query
+          name: sellerId
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Auction"
+    post:
+      operationId: createAuction
+      tags: [auctions]
+      summary: Create an auction listing
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAuctionBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Auction"
+        "400":
+          description: Validation error
+        "401":
+          description: Unauthorized
+
+  /auctions/{auctionId}:
+    get:
+      operationId: getAuction
+      tags: [auctions]
+      summary: Get a single auction
+      parameters:
+        - in: path
+          name: auctionId
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Auction"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateAuction
+      tags: [auctions]
+      summary: Update your auction (owner only, while active)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: auctionId
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateAuctionBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Auction"
+        "403":
+          description: Forbidden
+    delete:
+      operationId: deleteAuction
+      tags: [auctions]
+      summary: Cancel / delete your auction (no bids only)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: auctionId
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+
+  /auctions/{auctionId}/bids:
+    get:
+      operationId: listAuctionBids
+      tags: [auctions]
+      summary: Get bid history for an auction
+      parameters:
+        - in: path
+          name: auctionId
+          required: true
+          schema: { type: integer }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 20 }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AuctionBidEntry"
+    post:
+      operationId: placeBid
+      tags: [auctions]
+      summary: Place a bid on an auction
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: auctionId
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlaceBidBody"
+      responses:
+        "200":
+          description: Bid placed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Auction"
+        "400":
+          description: Bid too low or auction ended
+        "401":
+          description: Unauthorized
+
+  /auctions/{auctionId}/buy-now:
+    post:
+      operationId: buyNow
+      tags: [auctions]
+      summary: Instantly purchase an auction at the buy-now price
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: auctionId
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Purchased
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Auction"
+        "400":
+          description: No buy-now price or already ended
+
+  /auctions/{auctionId}/watch:
+    post:
+      operationId: toggleAuctionWatch
+      tags: [auctions]
+      summary: Toggle watching an auction
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: auctionId
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WatchToggleResponse"
+
+  /auctions/{auctionId}/end:
+    post:
+      operationId: endAuction
+      tags: [auctions]
+      summary: Manually end your own auction
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: auctionId
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Auction"
+
+  # MERCH
+  /merch/products:
+    get:
+      operationId: listMerchProducts
+      tags: [merch]
+      summary: Browse merch marketplace
+      parameters:
+        - name: creatorId
+          in: query
+          schema:
+            type: integer
+        - name: productType
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 24
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: Products list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MerchProductResponse"
+    post:
+      operationId: createMerchProduct
+      tags: [merch]
+      summary: Create a merch product
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMerchProductBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MerchProductResponse"
+
+  /merch/products/{id}:
+    get:
+      operationId: getMerchProduct
+      tags: [merch]
+      summary: Get a merch product
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Product
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MerchProductResponse"
+    put:
+      operationId: updateMerchProduct
+      tags: [merch]
+      summary: Update a merch product
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMerchProductBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MerchProductResponse"
+    delete:
+      operationId: deleteMerchProduct
+      tags: [merch]
+      summary: Delete a merch product
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+
+  /merch/storefront/{userId}:
+    get:
+      operationId: getMerchStorefront
+      tags: [merch]
+      summary: Get a creator's merch storefront
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Storefront products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MerchProductResponse"
+
+  /merch/orders:
+    post:
+      operationId: createMerchOrder
+      tags: [merch]
+      summary: Place a merch order
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMerchOrderBody"
+      responses:
+        "201":
+          description: Order placed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MerchOrderResponse"
+
+  /merch/orders/my:
+    get:
+      operationId: getMyMerchOrders
+      tags: [merch]
+      summary: Get my purchase orders
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Orders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MerchOrderResponse"
+
+  /merch/orders/sales:
+    get:
+      operationId: getMySales
+      tags: [merch]
+      summary: Get my sales as a creator
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Sales
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MerchOrderResponse"
+
+  /upload/media:
+    post:
+      operationId: uploadMedia
+      tags: [upload]
+      summary: Upload a public media file (photo, video, document)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/MediaUploadRequest"
+      responses:
+        "200":
+          description: Public URL and storage key
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MediaUploadResponse"
+
+  /upload/private:
+    post:
+      operationId: uploadPrivate
+      tags: [upload]
+      summary: Upload a private document (ID verification, sensitive files)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/PrivateUploadRequest"
+      responses:
+        "200":
+          description: Storage key
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PrivateUploadResponse"
+
+  /upload/private-url:
+    get:
+      operationId: getPrivateDownloadUrl
+      tags: [upload]
+      summary: Get a time-limited download URL for a private file
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: key
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Time-limited download URL
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [downloadUrl]
+                properties:
+                  downloadUrl:
+                    type: string
+
+  /mux/upload-url:
+    post:
+      operationId: createMuxUploadUrl
+      tags: [mux]
+      summary: Create a Mux direct upload URL for video posts
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [fileSize]
+              properties:
+                fileSize:
+                  type: number
+                  description: File size in bytes (used for quota enforcement)
+      responses:
+        "200":
+          description: Upload URL and upload ID
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MuxUploadInfo"
+
+  /mux/upload/{uploadId}:
+    get:
+      operationId: getMuxUploadStatus
+      tags: [mux]
+      summary: Poll status of a Mux direct upload
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: uploadId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Upload status and playback ID when ready
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MuxUploadStatus"
+
+  /mux/uploads/{uploadId}:
+    delete:
+      operationId: cancelMuxUpload
+      tags: [mux]
+      summary: Cancel an in-progress Mux upload and remove its pending record
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: uploadId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Upload cancelled
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                required: [ok]
+        "404":
+          description: Upload not found or not owned by caller
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+
+    # AUTH
+    RegisterInput:
+      type: object
+      required: [username, email, password]
+      properties:
+        username:
+          type: string
+          minLength: 3
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+        displayName:
+          type: string
+
+    LoginInput:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+
+    AuthResponse:
+      type: object
+      required: [user, token]
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+        token:
+          type: string
+
+    # USER
+    User:
+      type: object
+      required: [id, username, email, displayName, createdAt, accountTier, isAdmin, isVerified, followersCount, followingCount, postsCount]
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        email:
+          type: string
+        displayName:
+          type: string
+        bio:
+          type: ["string", "null"]
+        avatarUrl:
+          type: ["string", "null"]
+        bannerUrl:
+          type: ["string", "null"]
+        isVerified:
+          type: boolean
+        isPremium:
+          type: boolean
+        accountTier:
+          type: string
+          enum: [free, creator, pro, elite]
+          default: free
+        storageUsedBytes:
+          type: integer
+          format: int64
+          default: 0
+        idVerificationStatus:
+          type: string
+          enum: [none, pending, approved, rejected]
+          default: none
+        isNsfwCreator:
+          type: boolean
+          default: false
+        nsfwFilter:
+          type: string
+          enum: [hide_all, blur, allow_mature, allow_explicit]
+          default: blur
+        profileSongUrl:
+          type: ["string", "null"]
+        profileSongTitle:
+          type: ["string", "null"]
+        profileSongArtist:
+          type: ["string", "null"]
+        followersCount:
+          type: integer
+        followingCount:
+          type: integer
+        postsCount:
+          type: integer
+        interests:
+          type: array
+          items:
+            type: string
+          nullable: true
+        isAdmin:
+          type: boolean
+          default: false
+        createdAt:
+          type: string
+          format: date-time
+
+    UserSummary:
+      type: object
+      required: [id, username, displayName]
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        displayName:
+          type: string
+        avatarUrl:
+          type: ["string", "null"]
+        isVerified:
+          type: boolean
+        accountTier:
+          type: string
+          enum: [free, creator, pro, elite]
+          default: free
+        idVerificationStatus:
+          type: string
+          enum: [none, pending, approved, rejected]
+          default: none
+        isFollowing:
+          type: boolean
+        followersCount:
+          type: integer
+
+    UserProfile:
+      type: object
+      required: [id, username, displayName, createdAt]
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        displayName:
+          type: string
+        bio:
+          type: ["string", "null"]
+        avatarUrl:
+          type: ["string", "null"]
+        bannerUrl:
+          type: ["string", "null"]
+        isVerified:
+          type: boolean
+        isPremium:
+          type: boolean
+        followersCount:
+          type: integer
+        followingCount:
+          type: integer
+        postsCount:
+          type: integer
+        isFollowing:
+          type: boolean
+        accountTier:
+          type: string
+          enum: [free, creator, pro, elite]
+          default: free
+        storageUsedBytes:
+          type: integer
+          format: int64
+          default: 0
+        idVerificationStatus:
+          type: string
+          enum: [none, pending, approved, rejected]
+          default: none
+        isNsfwCreator:
+          type: boolean
+          default: false
+        nsfwFilter:
+          type: string
+          enum: [hide_all, blur, allow_mature, allow_explicit]
+          default: blur
+        profileSongUrl:
+          type: ["string", "null"]
+        profileSongTitle:
+          type: ["string", "null"]
+        profileSongArtist:
+          type: ["string", "null"]
+        isOwnProfile:
+          type: boolean
+        subscriptionPrice:
+          type: ["string", "null"]
+        defaultPostVisibility:
+          type: string
+          enum: [public, followers, subscribers_only]
+          default: public
+        isSubscribed:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        xUsername:
+          type: ["string", "null"]
+        xFollowersCount:
+          type: ["integer", "null"]
+        redditUsername:
+          type: ["string", "null"]
+        redditKarma:
+          type: ["integer", "null"]
+        websiteUrl:
+          type: ["string", "null"]
+        instagramUsername:
+          type: ["string", "null"]
+        tiktokUsername:
+          type: ["string", "null"]
+        onlyfansUrl:
+          type: ["string", "null"]
+        fanslyUrl:
+          type: ["string", "null"]
+
+    UpgradeAccountBody:
+      type: object
+      required: [tier]
+      properties:
+        tier:
+          type: string
+          enum: [free, creator, pro]
+
+    UpgradeAccountResult:
+      type: object
+      required: [ok, accountTier]
+      properties:
+        ok:
+          type: boolean
+        accountTier:
+          type: string
+          enum: [free, creator, pro]
+
+    VerifyIdInput:
+      type: object
+      required: [idImageData]
+      properties:
+        idImageData:
+          type: string
+          description: Base64-encoded JPEG image of government-issued ID
+
+    VerifyIdResult:
+      type: object
+      required: [idVerificationStatus]
+      properties:
+        idVerificationStatus:
+          type: string
+          enum: [none, pending, approved, rejected]
+
+    UserUpdate:
+      type: object
+      properties:
+        displayName:
+          type: string
+        bio:
+          type: string
+        avatarUrl:
+          type: string
+        bannerUrl:
+          type: string
+        isNsfwCreator:
+          type: boolean
+        nsfwFilter:
+          type: string
+          enum: [hide_all, blur, allow_mature, allow_explicit]
+        gender:
+          type: string
+          enum: [male, female, other]
+        profileSongUrl:
+          type: string
+        profileSongTitle:
+          type: string
+        profileSongArtist:
+          type: string
+        interests:
+          type: array
+          items:
+            type: string
+        subscriptionPrice:
+          type: string
+        defaultPostVisibility:
+          type: string
+          enum: [public, followers, subscribers_only]
+        websiteUrl:
+          type: string
+        instagramUsername:
+          type: string
+        tiktokUsername:
+          type: string
+        onlyfansUrl:
+          type: string
+        fanslyUrl:
+          type: string
+
+    UserStats:
+      type: object
+      required: [totalLikes, totalViews, totalTipsReceived, totalPostsCount]
+      properties:
+        totalLikes:
+          type: integer
+        totalViews:
+          type: integer
+        totalTipsReceived:
+          type: number
+        totalPostsCount:
+          type: integer
+        streamsHosted:
+          type: integer
+        topHashtags:
+          type: array
+          items:
+            type: string
+
+    FeedResponse:
+      type: object
+      required: [posts, personalised]
+      properties:
+        posts:
+          type: array
+          items:
+            $ref: "#/components/schemas/Post"
+        personalised:
+          type: boolean
+
+    # POSTS
+    LinkPreview:
+      type: object
+      required: [title, domain, url]
+      properties:
+        title:
+          type: string
+        description:
+          type: ["string", "null"]
+        image:
+          type: ["string", "null"]
+        domain:
+          type: string
+        url:
+          type: string
+
+    Post:
+      type: object
+      required: [id, authorId, author, type, caption, likesCount, commentsCount, createdAt]
+      properties:
+        id:
+          type: integer
+        authorId:
+          type: integer
+        author:
+          $ref: "#/components/schemas/UserSummary"
+        type:
+          type: string
+          enum: [text, photo, video, gif, link]
+        caption:
+          type: string
+        mediaUrl:
+          type: ["string", "null"]
+        thumbnailUrl:
+          type: ["string", "null"]
+        muxPlaybackId:
+          type: ["string", "null"]
+        embedUrl:
+          type: ["string", "null"]
+        hashtags:
+          type: array
+          items:
+            type: string
+        likesCount:
+          type: integer
+        commentsCount:
+          type: integer
+        viewsCount:
+          type: integer
+        isLiked:
+          type: boolean
+        isBookmarked:
+          type: boolean
+        isPinned:
+          type: boolean
+        contentRating:
+          type: string
+          enum: [safe, suggestive, mature, nsfw, explicit]
+          default: safe
+        visibility:
+          type: string
+          enum: [public, followers, subscribers_only]
+          default: public
+        isLocked:
+          type: boolean
+          default: false
+        price:
+          type: ["number", "null"]
+        allowDownload:
+          type: boolean
+          default: false
+        downloadPrice:
+          type: ["number", "null"]
+        isUnlocked:
+          type: boolean
+          default: false
+        displayAspect:
+          type: ["string", "null"]
+        trimStart:
+          type: ["number", "null"]
+        trimEnd:
+          type: ["number", "null"]
+        mediaItems:
+          type: array
+          items:
+            type: string
+          description: Ordered list of media URLs for carousel posts (photos/GIFs)
+        linkPreview:
+          $ref: "#/components/schemas/LinkPreview"
+        createdAt:
+          type: string
+          format: date-time
+
+    PostInput:
+      type: object
+      required: [type, caption]
+      properties:
+        type:
+          type: string
+          enum: [text, photo, video, gif, link]
+        caption:
+          type: string
+        mediaUrl:
+          type: string
+        thumbnailUrl:
+          type: string
+        muxPlaybackId:
+          type: string
+        muxAssetId:
+          type: string
+        muxUploadId:
+          type: string
+          description: The Mux upload ID used when uploading the video. Sent at post-creation time so the server can reliably remove the pending-upload tracking record.
+        hashtags:
+          type: array
+          items:
+            type: string
+        contentRating:
+          type: string
+          enum: [safe, suggestive, mature, nsfw, explicit]
+          default: safe
+        visibility:
+          type: string
+          enum: [public, followers, subscribers_only]
+          default: public
+        price:
+          type: number
+        allowDownload:
+          type: boolean
+        downloadPrice:
+          type: number
+        embedUrl:
+          type: string
+        displayAspect:
+          type: string
+          enum: [auto, "9/16", "1/1", "16/9"]
+        trimStart:
+          type: number
+        trimEnd:
+          type: number
+        mediaItems:
+          type: array
+          items:
+            type: string
+          description: Ordered list of media URLs for carousel posts (photos/GIFs)
+        linkPreview:
+          $ref: "#/components/schemas/LinkPreview"
+        consentToPublish:
+          type: boolean
+          description: Uploader attests they consent to publish this content
+        allDepictedConsented:
+          type: boolean
+          description: Uploader attests all depicted persons have consented
+        allDepicted18Plus:
+          type: boolean
+          description: Uploader attests all depicted persons are 18+
+        depictsOthers:
+          type: boolean
+          description: Whether the content depicts anyone other than the uploader
+        electronicSignature:
+          type: string
+          description: Uploader's typed name as electronic signature for the consent attestation
+
+    PostUpdate:
+      type: object
+      properties:
+        caption:
+          type: string
+        isPinned:
+          type: boolean
+        mediaUrl:
+          type: string
+          nullable: true
+        thumbnailUrl:
+          type: string
+          nullable: true
+        muxPlaybackId:
+          type: string
+          nullable: true
+        muxAssetId:
+          type: string
+          nullable: true
+          description: Mux asset ID for the replaced video. Used to clean up the old pending-upload record.
+        muxUploadId:
+          type: string
+          nullable: true
+          description: Mux upload ID used when uploading the replacement video. Sent so the server can remove the pending-upload tracking record.
+
+    # COMMENTS
+    Comment:
+      type: object
+      required: [id, postId, authorId, author, content, createdAt]
+      properties:
+        id:
+          type: integer
+        postId:
+          type: integer
+        authorId:
+          type: integer
+        parentCommentId:
+          type: integer
+          nullable: true
+        author:
+          $ref: "#/components/schemas/UserSummary"
+        content:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    PlaybackToken:
+      type: object
+      required: [token, playbackId]
+      properties:
+        token:
+          type: string
+          description: Short-lived RS256 JWT for Mux signed playback
+        playbackId:
+          type: string
+          description: Mux playback ID to pass to MuxPlayer
+
+    CommentInput:
+      type: object
+      required: [content]
+      properties:
+        content:
+          type: string
+          minLength: 1
+        parentCommentId:
+          type: integer
+          nullable: true
+
+    # STREAMS
+    Stream:
+      type: object
+      required: [id, hostId, host, title, status, viewerCount, createdAt]
+      properties:
+        id:
+          type: integer
+        hostId:
+          type: integer
+        host:
+          $ref: "#/components/schemas/UserSummary"
+        title:
+          type: string
+        description:
+          type: ["string", "null"]
+        thumbnailUrl:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [live, ended, scheduled]
+        isPrivate:
+          type: boolean
+        isPaid:
+          type: boolean
+        accessPrice:
+          type: ["number", "null"]
+        viewerCount:
+          type: integer
+        category:
+          type: ["string", "null"]
+        audienceType:
+          type: string
+          enum: [public, private, girls_only, guys_only, invite_only]
+        watchPartyUrl:
+          type: ["string", "null"]
+        muxPlaybackId:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+        endedAt:
+          type: ["string", "null"]
+
+    StreamCredentials:
+      type: object
+      required: [rtmpUrl, streamKey, muxPlaybackId]
+      properties:
+        rtmpUrl:
+          type: string
+        streamKey:
+          type: string
+        muxPlaybackId:
+          type: string
+
+    StreamInput:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        thumbnailUrl:
+          type: string
+        isPrivate:
+          type: boolean
+        isPaid:
+          type: boolean
+        accessPrice:
+          type: number
+        category:
+          type: string
+        watchPartyUrl:
+          type: string
+        audienceType:
+          type: string
+          enum: [public, private, girls_only, guys_only, invite_only]
+        inviteUserIds:
+          type: array
+          items:
+            type: integer
+        notifyFollowers:
+          type: boolean
+
+    StreamUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum: [live, ended]
+        viewerCount:
+          type: integer
+        watchPartyUrl:
+          type: ["string", "null"]
+
+    # MESSAGES
+    Conversation:
+      type: object
+      required: [id, participants, createdAt]
+      properties:
+        id:
+          type: integer
+        participants:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserSummary"
+        lastMessage:
+          type: ["object", "null"]
+          properties:
+            content:
+              type: string
+            sentAt:
+              type: string
+              format: date-time
+            senderId:
+              type: integer
+        unreadCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+
+    ConversationInput:
+      type: object
+      required: [participantId]
+      properties:
+        participantId:
+          type: integer
+
+    Message:
+      type: object
+      required: [id, conversationId, senderId, sender, content, createdAt]
+      properties:
+        id:
+          type: integer
+        conversationId:
+          type: integer
+        senderId:
+          type: integer
+        sender:
+          $ref: "#/components/schemas/UserSummary"
+        content:
+          type: string
+        mediaUrl:
+          type: ["string", "null"]
+        isRead:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    MessageInput:
+      type: object
+      required: [content]
+      properties:
+        content:
+          type: string
+        mediaUrl:
+          type: string
+
+    # WALLET
+    Wallet:
+      type: object
+      required: [id, userId, balance, currency]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        balance:
+          type: number
+        currency:
+          type: string
+          default: USD
+        totalEarned:
+          type: number
+        totalSpent:
+          type: number
+
+    WalletFundInput:
+      type: object
+      required: [amount]
+      properties:
+        amount:
+          type: number
+          minimum: 1
+
+    Transaction:
+      type: object
+      required: [id, userId, type, amount, status, createdAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        type:
+          type: string
+          enum: [tip, deposit, withdrawal, purchase, fee]
+        amount:
+          type: number
+        fee:
+          type: number
+        status:
+          type: string
+          enum: [pending, completed, failed]
+        description:
+          type: ["string", "null"]
+        relatedUserId:
+          type: ["integer", "null"]
+        relatedUser:
+          $ref: "#/components/schemas/UserSummary"
+        createdAt:
+          type: string
+          format: date-time
+
+    TipInput:
+      type: object
+      required: [recipientId, amount]
+      properties:
+        recipientId:
+          type: integer
+        amount:
+          type: number
+          minimum: 0.5
+        message:
+          type: string
+
+    # MEETUPS
+    MeetupDetail:
+      type: object
+      required: [id, hostId, title, date, isVirtual, status, rsvpCount, createdAt]
+      properties:
+        id:
+          type: integer
+        hostId:
+          type: integer
+        title:
+          type: string
+        description:
+          type: ["string", "null"]
+        date:
+          type: string
+          format: date-time
+        location:
+          type: ["string", "null"]
+        virtualUrl:
+          type: ["string", "null"]
+        isVirtual:
+          type: boolean
+        category:
+          type: ["string", "null"]
+        maxAttendees:
+          type: ["integer", "null"]
+        coverImageUrl:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [upcoming, cancelled, past]
+        rsvpCount:
+          type: integer
+        hasRsvped:
+          type: boolean
+        host:
+          $ref: "#/components/schemas/UserSummary"
+        createdAt:
+          type: string
+          format: date-time
+
+    MeetupList:
+      type: object
+      required: [meetups, total]
+      properties:
+        meetups:
+          type: array
+          items:
+            $ref: "#/components/schemas/MeetupDetail"
+        total:
+          type: integer
+
+    CreateMeetupInput:
+      type: object
+      required: [title, date]
+      properties:
+        title:
+          type: string
+          minLength: 3
+        description:
+          type: string
+        date:
+          type: string
+          format: date-time
+        location:
+          type: string
+        virtualUrl:
+          type: string
+        isVirtual:
+          type: boolean
+          default: false
+        category:
+          type: string
+        maxAttendees:
+          type: integer
+        coverImageUrl:
+          type: string
+
+    UpdateMeetupInput:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        date:
+          type: string
+          format: date-time
+        location:
+          type: string
+        virtualUrl:
+          type: string
+        status:
+          type: string
+          enum: [upcoming, cancelled, past]
+        coverImageUrl:
+          type: string
+
+    RsvpResult:
+      type: object
+      required: [rsvpCount, hasRsvped]
+      properties:
+        rsvpCount:
+          type: integer
+        hasRsvped:
+          type: boolean
+
+    # MARKETPLACE
+    ListingDetail:
+      type: object
+      required: [id, sellerId, title, price, type, status, salesCount, createdAt]
+      properties:
+        id:
+          type: integer
+        sellerId:
+          type: integer
+        title:
+          type: string
+        description:
+          type: ["string", "null"]
+        price:
+          type: number
+        category:
+          type: ["string", "null"]
+        imageUrl:
+          type: ["string", "null"]
+        type:
+          type: string
+          enum: [digital, service, physical]
+        status:
+          type: string
+          enum: [active, sold_out, archived]
+        salesCount:
+          type: integer
+        seller:
+          $ref: "#/components/schemas/UserSummary"
+        createdAt:
+          type: string
+          format: date-time
+
+    ListingList:
+      type: object
+      required: [listings, total]
+      properties:
+        listings:
+          type: array
+          items:
+            $ref: "#/components/schemas/ListingDetail"
+        total:
+          type: integer
+
+    CreateListingInput:
+      type: object
+      required: [title, price]
+      properties:
+        title:
+          type: string
+          minLength: 3
+        description:
+          type: string
+        price:
+          type: number
+          minimum: 0.01
+        category:
+          type: string
+        imageUrl:
+          type: string
+        type:
+          type: string
+          enum: [digital, service]
+
+    UpdateListingInput:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        price:
+          type: number
+        category:
+          type: string
+        imageUrl:
+          type: string
+        status:
+          type: string
+          enum: [active, sold_out, archived]
+
+    Order:
+      type: object
+      required: [id, buyerId, listingId, sellerId, price, status, createdAt]
+      properties:
+        id:
+          type: integer
+        buyerId:
+          type: integer
+        listingId:
+          type: integer
+        sellerId:
+          type: integer
+        price:
+          type: number
+        status:
+          type: string
+        listing:
+          $ref: "#/components/schemas/ListingDetail"
+        createdAt:
+          type: string
+          format: date-time
+
+    # HASHTAGS
+    Hashtag:
+      type: object
+      required: [name, postsCount]
+      properties:
+        name:
+          type: string
+        postsCount:
+          type: integer
+        trendingScore:
+          type: number
+
+    SearchResults:
+      type: object
+      properties:
+        posts:
+          type: array
+          items:
+            $ref: "#/components/schemas/Post"
+        users:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserSummary"
+
+    # NOTIFICATIONS
+    Notification:
+      type: object
+      required: [id, userId, type, message, isRead, createdAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        type:
+          type: string
+          enum: [follow, like, comment, comment_reply, tip, stream_live, mention]
+        message:
+          type: string
+        isRead:
+          type: boolean
+        actorId:
+          type: ["integer", "null"]
+        actor:
+          $ref: "#/components/schemas/UserSummary"
+        relatedId:
+          type: ["integer", "null"]
+        createdAt:
+          type: string
+          format: date-time
+
+    UnreadCount:
+      type: object
+      required: [count]
+      properties:
+        count:
+          type: integer
+
+    ReportInput:
+      type: object
+      required: [reason]
+      properties:
+        reason:
+          type: string
+          enum: [spam, harassment, hate_speech, illegal_content, nsfw_unlabeled, violence, exploitation, other]
+        details:
+          type: string
+
+    ReportResult:
+      type: object
+      required: [ok]
+      properties:
+        ok:
+          type: boolean
+
+    ForgotPasswordBody:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+
+    ForgotPasswordResponse:
+      type: object
+      required: [ok, message]
+      properties:
+        ok:
+          type: boolean
+        message:
+          type: string
+        resetUrl:
+          type: string
+          description: Reset URL (only present when email delivery is not configured)
+
+    ResetPasswordBody:
+      type: object
+      required: [token, newPassword]
+      properties:
+        token:
+          type: string
+        newPassword:
+          type: string
+          minLength: 8
+
+    PostReactionsResponse:
+      type: object
+      required: [counts, userReactions]
+      properties:
+        counts:
+          type: object
+          additionalProperties:
+            type: integer
+          description: Map of emoji to reaction count
+        userReactions:
+          type: array
+          items:
+            type: string
+          description: List of emojis the current user has reacted with
+
+    AddReactionBody:
+      type: object
+      required: [emoji]
+      properties:
+        emoji:
+          type: string
+
+    # AUCTIONS
+    Auction:
+      type: object
+      required: [id, sellerId, title, itemType, condition, startingBid, bidCount, watchCount, status, endTime, createdAt]
+      properties:
+        id:
+          type: integer
+        sellerId:
+          type: integer
+        title:
+          type: string
+        description:
+          type: ["string", "null"]
+        imageUrl:
+          type: ["string", "null"]
+        videoUrl:
+          type: ["string", "null"]
+        category:
+          type: ["string", "null"]
+        tags:
+          type: array
+          items:
+            type: string
+          nullable: true
+        condition:
+          type: string
+          enum: [new, like_new, used, collectible]
+        itemType:
+          type: string
+          enum: [physical, digital, experience, collectible, commission, ticket]
+        startingBid:
+          type: number
+        reservePrice:
+          type: ["number", "null"]
+        buyNowPrice:
+          type: ["number", "null"]
+        currentBid:
+          type: ["number", "null"]
+        currentBidderId:
+          type: ["integer", "null"]
+        currentBidder:
+          $ref: "#/components/schemas/UserSummary"
+        bidCount:
+          type: integer
+        watchCount:
+          type: integer
+        status:
+          type: string
+          enum: [active, ended, cancelled, sold]
+        shippingInfo:
+          type: ["string", "null"]
+        endTime:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        seller:
+          $ref: "#/components/schemas/UserSummary"
+        isWatching:
+          type: boolean
+
+    AuctionBidEntry:
+      type: object
+      required: [id, auctionId, bidderId, amount, createdAt]
+      properties:
+        id:
+          type: integer
+        auctionId:
+          type: integer
+        bidderId:
+          type: integer
+        amount:
+          type: number
+        isWinning:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        bidder:
+          $ref: "#/components/schemas/UserSummary"
+
+    CreateAuctionBody:
+      type: object
+      required: [title, startingBid, endTime, itemType, condition]
+      properties:
+        title:
+          type: string
+          minLength: 3
+        description:
+          type: string
+        imageUrl:
+          type: string
+        videoUrl:
+          type: string
+        category:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        condition:
+          type: string
+          enum: [new, like_new, used, collectible]
+        itemType:
+          type: string
+          enum: [physical, digital, experience, collectible, commission, ticket]
+        startingBid:
+          type: number
+          minimum: 0.01
+        reservePrice:
+          type: number
+        buyNowPrice:
+          type: number
+        shippingInfo:
+          type: string
+        endTime:
+          type: string
+          format: date-time
+
+    UpdateAuctionBody:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        imageUrl:
+          type: string
+        buyNowPrice:
+          type: number
+        shippingInfo:
+          type: string
+
+    PlaceBidBody:
+      type: object
+      required: [amount]
+      properties:
+        amount:
+          type: number
+          minimum: 0.01
+
+    WatchToggleResponse:
+      type: object
+      required: [watching]
+      properties:
+        watching:
+          type: boolean
+
+    OkResponse:
+      type: object
+      required: [ok]
+      properties:
+        ok:
+          type: boolean
+
+    MerchProductResponse:
+      type: object
+      required: [id, creatorId, title, productType, basePrice, creatorProfit, status, salesCount, colors, sizes, tags, isFeatured, isLimitedDrop, createdAt]
+      properties:
+        id:
+          type: integer
+        creatorId:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        productType:
+          type: string
+        designUrl:
+          type: string
+        previewImageUrl:
+          type: string
+        colors:
+          type: array
+          items:
+            type: string
+        sizes:
+          type: array
+          items:
+            type: string
+        basePrice:
+          type: number
+        creatorProfit:
+          type: number
+        tags:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+        salesCount:
+          type: integer
+        isFeatured:
+          type: boolean
+        isLimitedDrop:
+          type: boolean
+        stockLimit:
+          type: integer
+        creator:
+          type: object
+        createdAt:
+          type: string
+
+    CreateMerchProductBody:
+      type: object
+      required: [title, productType, basePrice, creatorProfit]
+      properties:
+        title:
+          type: string
+          minLength: 3
+        description:
+          type: string
+        productType:
+          type: string
+          enum: [shirt, hoodie, hat, poster, sticker, mug, tote_bag, phone_case, vinyl_cover, sweatpants]
+        designUrl:
+          type: string
+        previewImageUrl:
+          type: string
+        colors:
+          type: array
+          items:
+            type: string
+        sizes:
+          type: array
+          items:
+            type: string
+        basePrice:
+          type: number
+          minimum: 1
+        creatorProfit:
+          type: number
+          minimum: 0
+        tags:
+          type: array
+          items:
+            type: string
+        isLimitedDrop:
+          type: boolean
+        stockLimit:
+          type: integer
+
+    UpdateMerchProductBody:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        designUrl:
+          type: string
+        previewImageUrl:
+          type: string
+        colors:
+          type: array
+          items:
+            type: string
+        sizes:
+          type: array
+          items:
+            type: string
+        basePrice:
+          type: number
+        creatorProfit:
+          type: number
+        tags:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+          enum: [active, draft, archived]
+        isLimitedDrop:
+          type: boolean
+        stockLimit:
+          type: integer
+
+    CreateMerchOrderBody:
+      type: object
+      required: [productId, color, size, shippingName, shippingAddress, shippingCity, shippingState, shippingZip, idempotencyKey]
+      properties:
+        productId:
+          type: integer
+        color:
+          type: string
+        size:
+          type: string
+        quantity:
+          type: integer
+          minimum: 1
+          default: 1
+        shippingName:
+          type: string
+        shippingAddress:
+          type: string
+        shippingCity:
+          type: string
+        shippingState:
+          type: string
+        shippingZip:
+          type: string
+        shippingCountry:
+          type: string
+          default: US
+        idempotencyKey:
+          type: string
+          format: uuid
+
+    MerchOrderResponse:
+      type: object
+      required: [id, buyerId, creatorId, productId, productTitle, status, totalAmount, createdAt]
+      properties:
+        id:
+          type: integer
+        buyerId:
+          type: integer
+        creatorId:
+          type: integer
+        productId:
+          type: integer
+        productTitle:
+          type: string
+        productType:
+          type: string
+        designUrl:
+          type: string
+        color:
+          type: string
+        size:
+          type: string
+        quantity:
+          type: integer
+        unitPrice:
+          type: number
+        totalAmount:
+          type: number
+        platformFee:
+          type: number
+        creatorPayout:
+          type: number
+        shippingName:
+          type: string
+        shippingAddress:
+          type: string
+        shippingCity:
+          type: string
+        shippingState:
+          type: string
+        shippingZip:
+          type: string
+        shippingCountry:
+          type: string
+        status:
+          type: string
+        trackingNumber:
+          type: string
+        fulfillmentId:
+          type: string
+        buyer:
+          type: object
+        creator:
+          type: object
+        product:
+          type: object
+        createdAt:
+          type: string
+
+    CategoryItem:
+      type: object
+      required: [id, name, sortOrder, createdAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        sortOrder:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+
+    PostUnlockResult:
+      type: object
+      required: [success, hasDownloadAccess]
+      properties:
+        success:
+          type: boolean
+        hasDownloadAccess:
+          type: boolean
+
+    PostUnlockStatus:
+      type: object
+      required: [unlocked, hasDownloadAccess]
+      properties:
+        unlocked:
+          type: boolean
+        hasDownloadAccess:
+          type: boolean
+
+    LibraryPost:
+      type: object
+      required: [id, type, caption, unlockedAt, amountPaid, hasDownloadAccess]
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+        caption:
+          type: string
+        mediaUrl:
+          type: string
+        thumbnailUrl:
+          type: string
+        muxPlaybackId:
+          type: string
+        price:
+          type: number
+        allowDownload:
+          type: boolean
+        author:
+          $ref: "#/components/schemas/UserSummary"
+        unlockedAt:
+          type: string
+          format: date-time
+        amountPaid:
+          type: number
+        hasDownloadAccess:
+          type: boolean
+        isUnlocked:
+          type: boolean
+
+    CustomRequestUserSummary:
+      type: object
+      required: [id, username, displayName]
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        displayName:
+          type: string
+        avatarUrl:
+          type: string
+        isVerified:
+          type: boolean
+
+    CustomRequest:
+      type: object
+      required: [id, requesterId, creatorId, title, description, contentType, budget, status, isPrivate, platformFee, createdAt, updatedAt]
+      properties:
+        id:
+          type: integer
+        requesterId:
+          type: integer
+        creatorId:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        contentType:
+          type: string
+        budget:
+          type: number
+        deadline:
+          type: string
+        status:
+          type: string
+        referenceUrl:
+          type: string
+        counterofferPrice:
+          type: number
+        creatorNote:
+          type: string
+        deliveryUrl:
+          type: string
+        deliveryNote:
+          type: string
+        isPrivate:
+          type: boolean
+        platformFee:
+          type: number
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        requester:
+          $ref: "#/components/schemas/CustomRequestUserSummary"
+        creator:
+          $ref: "#/components/schemas/CustomRequestUserSummary"
+
+    CustomRequestMessage:
+      type: object
+      required: [id, requestId, senderId, message, createdAt]
+      properties:
+        id:
+          type: integer
+        requestId:
+          type: integer
+        senderId:
+          type: integer
+        message:
+          type: string
+        fileUrl:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        sender:
+          $ref: "#/components/schemas/CustomRequestUserSummary"
+
+    CustomRequestDetail:
+      allOf:
+        - $ref: "#/components/schemas/CustomRequest"
+        - type: object
+          required: [messages]
+          properties:
+            messages:
+              type: array
+              items:
+                $ref: "#/components/schemas/CustomRequestMessage"
+
+    CreateCustomRequestBody:
+      type: object
+      required: [creatorId, title, description, contentType, budget]
+      properties:
+        creatorId:
+          type: integer
+        title:
+          type: string
+          minLength: 3
+          maxLength: 120
+        description:
+          type: string
+          minLength: 10
+          maxLength: 2000
+        contentType:
+          type: string
+          enum: [video, photo, message, shoutout, music, art, other]
+        budget:
+          type: number
+        deadline:
+          type: string
+        referenceUrl:
+          type: string
+        isPrivate:
+          type: boolean
+          default: true
+
+    UpdateCustomRequestBody:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [accepted, rejected, counteroffered, in_progress, delivered, cancelled, completed]
+        counterofferPrice:
+          type: number
+        creatorNote:
+          type: string
+          maxLength: 1000
+        deliveryUrl:
+          type: string
+        deliveryNote:
+          type: string
+          maxLength: 1000
+        message:
+          type: string
+          maxLength: 2000
+        fileUrl:
+          type: string
+
+    CreateCategoryBody:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        sortOrder:
+          type: integer
+
+    MediaUploadRequest:
+      type: object
+      required: [file]
+      properties:
+        file:
+          type: string
+          format: binary
+          description: File to upload
+        folder:
+          type: string
+          description: "Destination folder (default: media)"
+
+    MediaUploadResponse:
+      type: object
+      required: [publicUrl, key]
+      properties:
+        publicUrl:
+          type: string
+        key:
+          type: string
+
+    PrivateUploadRequest:
+      type: object
+      required: [file]
+      properties:
+        file:
+          type: string
+          format: binary
+          description: File to upload
+        folder:
+          type: string
+          description: "Destination folder (default: docs)"
+
+    PrivateUploadResponse:
+      type: object
+      required: [key]
+      properties:
+        key:
+          type: string
+
+    MuxUploadInfo:
+      type: object
+      required: [uploadId, uploadUrl]
+      properties:
+        uploadId:
+          type: string
+        uploadUrl:
+          type: string
+
+    MuxUploadStatus:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [waiting, asset_created, errored, cancelled]
+        assetId:
+          type: string
+        playbackId:
+          type: string

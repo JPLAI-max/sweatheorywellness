@@ -1,0 +1,53 @@
+modules = ["nodejs-24", "python-3.11", "postgresql-16"]
+
+[deployment]
+router = "application"
+deploymentTarget = "autoscale"
+
+[deployment.postBuild]
+args = ["pnpm", "store", "prune"]
+env = { "CI" = "true" }
+
+[workflows]
+runButton = "Project"
+
+[agent]
+stack = "PNPM_WORKSPACE"
+expertMode = true
+integrations = ["github:1.0.0"]
+
+[postMerge]
+path = "scripts/post-merge.sh"
+timeoutMs = 120000
+
+[nix]
+channel = "stable-25_05"
+
+[userenv]
+
+[userenv.shared]
+R2_BUCKET_MEDIA = "gooncity-media"
+R2_BUCKET_PRIVATE = "gooncity-private"
+R2_ENDPOINT = "https://d5bd1e79101a18bf15119e43ea96e987.r2.cloudflarestorage.com"
+R2_ACCESS_KEY_ID_VALUE = "666b699deadfa3f4b9182999f1338f1c"
+R2_MEDIA_PUBLIC_URL = "https://pub-2e59ec243fb04fcd8324875096606482.r2.dev"
+
+[[ports]]
+localPort = 8080
+externalPort = 8080
+
+[[ports]]
+localPort = 8081
+externalPort = 80
+
+[[ports]]
+localPort = 8082
+externalPort = 3001
+
+[[ports]]
+localPort = 8083
+externalPort = 3002
+
+[[ports]]
+localPort = 23345
+externalPort = 3000

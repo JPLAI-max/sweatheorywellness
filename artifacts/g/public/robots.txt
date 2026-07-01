@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /feed
+Disallow: /messages
+Disallow: /wallet
+Disallow: /notifications
+Disallow: /settings
+Disallow: /go-live
+
+Sitemap: https://gooncity.com/sitemap.xml
